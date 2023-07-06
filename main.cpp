@@ -8,47 +8,81 @@
 
 #include <unistd.h>
 #include <thread>
+#include <xcb/randr.h>
+#include <xcb/xcb.h>
 
 // Methods
-inline CFunctionHook* g_pSetXWaylandScaleHook = nullptr;
-
-
 // Do NOT change this function.
 APICALL EXPORT std::string PLUGIN_API_VERSION() {
     return HYPRLAND_API_VERSION;
 }
 
 
-void setXWaylandNames() {
-  wl_resource* res = nullptr;
-  for (auto& m : g_pCompositor->m_vMonitors) {
-    wl_list_for_each(res, &m->output->resources, link) {
-      const auto PCLIENT = wl_resource_get_client(res);
-      if (PCLIENT == g_pXWaylandManager->m_sWLRXWayland->server->client) {
-        wl_output_send_name(res, m->szName.c_str());
+namespace XwaylandPrimaryPlugin {
+  void setXWaylandPrimary() {
+    static SConfigValue* PRIMARYNAME = HyprlandAPI::getConfigValue(PHANDLE, "plugin:xwaylandprimary:display");
+    const auto PMONITOR = g_pCompositor->getMonitorFromName(PRIMARYNAME->strValue);
+    if (!PMONITOR) {
+      return;
+    }
+  
+    const auto XCBCONN = xcb_connect(g_pXWaylandManager->m_sWLRXWayland->display_name, NULL);
+    const auto XCBERR = xcb_connection_has_error(XCBCONN);
+    if (XCBERR) {
+      return;
+    }
+  
+    xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(XCBCONN)).data;
+  
+    xcb_randr_get_screen_resources_cookie_t res_cookie = xcb_randr_get_screen_resources(XCBCONN, screen->root);
+    xcb_randr_get_screen_resources_reply_t *res_reply = xcb_randr_get_screen_resources_reply(XCBCONN, res_cookie, 0);
+    xcb_timestamp_t timestamp = res_reply->config_timestamp;
+  
+    int crtc_cnt = 0;
+    xcb_randr_crtc_t *x_crtcs;
+  
+    crtc_cnt = xcb_randr_get_screen_resources_crtcs_length(res_reply);
+    x_crtcs = xcb_randr_get_screen_resources_crtcs(res_reply);
+  
+    for (int i = 0; i < crtc_cnt; i++) {
+      xcb_randr_get_crtc_info_reply_t *crtc = xcb_randr_get_crtc_info_reply(XCBCONN, xcb_randr_get_crtc_info(XCBCONN, x_crtcs[i], timestamp), NULL);
+      if (crtc == NULL) {
+        continue;
+      }
+  
+      if (crtc->x == PMONITOR->vecPosition.x && crtc->y == PMONITOR->vecPosition.y) {
+        xcb_randr_output_t *crtc_outputs = xcb_randr_get_crtc_info_outputs(crtc);
+        xcb_void_cookie_t p_cookie = xcb_randr_set_output_primary_checked(XCBCONN, screen->root, crtc_outputs[0]);
+        xcb_request_check(XCBCONN, p_cookie);
+        break;
       }
     }
+    if (res_reply)
+      free(res_reply);
+    xcb_disconnect(XCBCONN);
+    return;
   }
-
+  
+  
+  
+  void XWaylandready(wl_listener *listener, void *data) {
+    setXWaylandPrimary();
+  }
+  
+  wl_listener readyListener = {.notify = XWaylandready};
 }
-typedef void (*origSetXWaylandScale)(void *thisptr, std::optional<double> scale);
 
-void hksetXWaylandScale(void *thisptr, std::optional<double> scale) { 
-	(*(origSetXWaylandScale)g_pSetXWaylandScaleHook->m_pOriginal)(thisptr, scale);
-  setXWaylandNames();
-  g_pEventManager->postEvent({"xwaylandupdate", ""});
-}
 
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
 
 
-    static const auto XWAYLANDSCALEMETHODS = HyprlandAPI::findFunctionsByName(PHANDLE, "setXWaylandScale");
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:xwaylandprimary:display", SConfigValue{.strValue = "TESTMONITOR"});
+    HyprlandAPI::reloadConfig();
 
-    g_pSetXWaylandScaleHook = HyprlandAPI::createFunctionHook(PHANDLE, XWAYLANDSCALEMETHODS[0].address, (void*)&hksetXWaylandScale);
-    g_pSetXWaylandScaleHook->hook();
-    setXWaylandNames();
-    return {"XWayland Name fix", "Fix xwayland names because stupid", "Zakk", "1.0"};
+    addWLSignal(&g_pXWaylandManager->m_sWLRXWayland->events.ready, &XwaylandPrimaryPlugin::readyListener, NULL, "Xwayland Primary Plugin");
+
+    return {"XWayland Primary Display", "Set a configurable XWayland primary display", "Zakk", "1.0"};
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
