@@ -10,7 +10,7 @@ function setprimary {
 }
 
 function handle {
-	if [ ${1:0:14} == "xwaylandupdate"]; then
+	if [ ${1:0:14} == "xwaylandupdate" ]; then
 		setprimary
 	fi
 
