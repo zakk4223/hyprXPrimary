@@ -55,7 +55,9 @@ namespace XwaylandPrimaryPlugin {
         xcb_void_cookie_t p_cookie = xcb_randr_set_output_primary_checked(XCBCONN, screen->root, crtc_outputs[0]);
         xcb_request_check(XCBCONN, p_cookie);
         break;
+        free(crtc);
       }
+      free(crtc);
     }
     if (res_reply)
       free(res_reply);
