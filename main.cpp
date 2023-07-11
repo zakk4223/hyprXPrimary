@@ -22,14 +22,19 @@ APICALL EXPORT std::string PLUGIN_API_VERSION() {
 
 namespace XwaylandPrimaryPlugin {
 
+
+  HOOK_CALLBACK_FN *prerenderHook = nullptr;
+
   void setXWaylandPrimary() {
     if (!g_pXWaylandManager->m_sWLRXWayland->server->client) {
+      Debug::log(LOG, "XWaylandPrimary: No XWayland client");
       //There's no xwayland server, and xcb_connect seems to hang if there isn't?
       return;
     }
     static SConfigValue* PRIMARYNAME = HyprlandAPI::getConfigValue(PHANDLE, "plugin:xwaylandprimary:display");
     const auto PMONITOR = g_pCompositor->getMonitorFromName(PRIMARYNAME->strValue);
     if (!PMONITOR) {
+      Debug::log(LOG, "XWaylandPrimary: Could not find monitor %s", PRIMARYNAME->strValue.c_str());
       return;
     }
   
@@ -60,14 +65,22 @@ namespace XwaylandPrimaryPlugin {
         continue;
       }
   
+      Debug::log(LOG, "XWaylandPrimary: CRTC X: %d Y: %d WIDTH: %d HEIGHT: %d MONITOR X: %f Y: %f WIDTH: %f HEIGHT:%f", crtc->x, crtc->y, crtc->width, crtc->height, PMONITOR->vecPosition.x, PMONITOR->vecPosition.y, PMONITOR->vecSize.x, PMONITOR->vecSize.y);
       if (crtc->x == PMONITOR->vecPosition.x && crtc->y == PMONITOR->vecPosition.y) {
         xcb_randr_output_t *crtc_outputs = xcb_randr_get_crtc_info_outputs(crtc);
-        if (crtc_outputs[0] != primary_output_reply->output) {
+        Debug::log(LOG, "XWaylandPrimary: CRTC OUTPUT %d PRIMARY %d", crtc_outputs[0], primary_output_reply->output);
+        //if (crtc_outputs[0] != primary_output_reply->output) {
+          Debug::log(LOG, "XWaylandPrimary: setting primary monitor");
           xcb_void_cookie_t p_cookie = xcb_randr_set_output_primary_checked(XCBCONN, screen->root, crtc_outputs[0]);
           xcb_request_check(XCBCONN, p_cookie);
+          if (prerenderHook)
+          {
+            HyprlandAPI::unregisterCallback(PHANDLE, prerenderHook);
+            prerenderHook = nullptr;
+          }
           break;
           free(crtc);
-        }
+        //}
       }
       free(crtc);
     }
@@ -96,9 +109,20 @@ namespace XwaylandPrimaryPlugin {
     setXWaylandPrimary();
   }
 
+
+  void monitorEvent() {
+    Debug::log(LOG, "XWaylandPrimary: MONITOR EVENT");
+    for(auto & m: g_pCompositor->m_vMonitors) {
+      if (!m->output)
+        continue;
+      Debug::log(LOG, "XWaylandPrimary: MONITOR %s X %f Y %f WIDTH %f HEIGHT %f", m->szName.c_str(), m->vecPosition.x, m->vecPosition.y, m->vecSize.x, m->vecSize.y);
+    }
+    if (g_pXWaylandManager->m_sWLRXWayland->server->client) {
+      //Xwayland may not have created the new output yet, so delay via a periodic hook until it does. 
+      prerenderHook = HyprlandAPI::registerCallbackDynamic(PHANDLE, "preRender", [&](void *self, std::any data) {XwaylandPrimaryPlugin::setXWaylandPrimary();});
+    }
+  }
 }
-
-
 
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
@@ -112,8 +136,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     XwaylandPrimaryPlugin::ploadConfigLoadVarsHook = HyprlandAPI::createFunctionHook(PHANDLE, XWAYLANDSCALEMETHODS[0].address, (void*)&XwaylandPrimaryPlugin::hkloadConfigLoadVars);
     XwaylandPrimaryPlugin::ploadConfigLoadVarsHook->hook();
 
-    HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorAdded", [&](void *self, std::any data) {XwaylandPrimaryPlugin::setXWaylandPrimary();});
-    HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorRemoved", [&](void *self, std::any data) {XwaylandPrimaryPlugin::setXWaylandPrimary();});
+    HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorAdded", [&](void *self, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
+    HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorRemoved", [&](void *self, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
 
     addWLSignal(&g_pXWaylandManager->m_sWLRXWayland->events.ready, &XwaylandPrimaryPlugin::readyListener, NULL, "Xwayland Primary Plugin");
 
