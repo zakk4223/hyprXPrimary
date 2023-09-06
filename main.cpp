@@ -34,7 +34,7 @@ namespace XwaylandPrimaryPlugin {
     static SConfigValue* PRIMARYNAME = HyprlandAPI::getConfigValue(PHANDLE, "plugin:xwaylandprimary:display");
     const auto PMONITOR = g_pCompositor->getMonitorFromName(PRIMARYNAME->strValue);
     if (!PMONITOR) {
-      Debug::log(LOG, "XWaylandPrimary: Could not find monitor %s", PRIMARYNAME->strValue.c_str());
+      Debug::log(LOG, "XWaylandPrimary: Could not find monitor {}", PRIMARYNAME->strValue);
       return;
     }
   
@@ -64,10 +64,10 @@ namespace XwaylandPrimaryPlugin {
 			}
 			uint8_t *output_name = xcb_randr_get_output_info_name(output);
 			int len = xcb_randr_get_output_info_name_length(output);
-			Debug::log(LOG, "XCB OUTPUT %s HYPR PRIMARY %s", output_name, PMONITOR->szName.c_str());
+			Debug::log(LOG, "XCB OUTPUT {} HYPR PRIMARY {}", (char *)output_name, PMONITOR->szName);
 			if (!strncmp((char *)output_name, PMONITOR->szName.c_str(), len))
 			{
-          Debug::log(LOG, "XWaylandPrimary: setting primary monitor %s", (char *)output_name);
+          Debug::log(LOG, "XWaylandPrimary: setting primary monitor {}", (char *)output_name);
           xcb_void_cookie_t p_cookie = xcb_randr_set_output_primary_checked(XCBCONN, screen->root, x_outputs[i]);
           xcb_request_check(XCBCONN, p_cookie);
           if (prerenderHook)
@@ -108,7 +108,7 @@ namespace XwaylandPrimaryPlugin {
     for(auto & m: g_pCompositor->m_vMonitors) {
       if (!m->output)
         continue;
-      Debug::log(LOG, "XWaylandPrimary: MONITOR %s X %f Y %f WIDTH %f HEIGHT %f", m->szName.c_str(), m->vecPosition.x, m->vecPosition.y, m->vecSize.x, m->vecSize.y);
+      Debug::log(LOG, "XWaylandPrimary: MONITOR {} X {} Y {} WIDTH {} HEIGHT {}", m->szName, m->vecPosition.x, m->vecPosition.y, m->vecSize.x, m->vecSize.y);
     }
     if (g_pXWaylandManager->m_sWLRXWayland->server->client) {
       //Xwayland may not have created the new output yet, so delay via a periodic hook until it does. 
