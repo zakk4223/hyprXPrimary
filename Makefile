@@ -1,8 +1,14 @@
-# compile with HYPRLAND_HEADERS=<path_to_hl> make all
-# make sure that the path above is to the root hl repo directory, NOT src/
-# and that you have ran `make protocols` in the hl dir.
+PLUGIN_NAME=hyprXPrimary
+INSTALL_LOCATION=${HOME}/.local/share/hyprload/plugins/bin
 
-all:
-	g++ -shared -Wall -fPIC --no-gnu-unique main.cpp -o xWaylandFixPlugin.so -g  -DWLR_USE_UNSTABLE `pkg-config --cflags pixman-1 libdrm hyprland` -std=c++23
+all: check_build $(PLUGIN_NAME).so
+
+install: all
+	mkdir -p ${INSTALL_LOCATION}
+	cp $(PLUGIN_NAME).so ${INSTALL_LOCATION}
+
+check_build:
+	g++ -shared -Wall -fPIC --no-gnu-unique main.cpp -o $(PLUGIN_NAME).so -g  -DWLR_USE_UNSTABLE `pkg-config --cflags pixman-1 libdrm hyprland` -std=c++23
+
 clean:
-	rm ./xWaylandFixPlugin.so
+	rm -f ./$(PLUGIN_NAME).so
