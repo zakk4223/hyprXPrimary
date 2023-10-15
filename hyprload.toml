@@ -6,5 +6,5 @@ author = "zakk4223"
 [hyprXPrimary.build]
 output = "hyprXPrimary.so"
 steps = [
-    "make all",
+    "make install",
 ]
