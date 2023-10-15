@@ -3,7 +3,7 @@ description = "Primary XWayland display"
 version = "1.0.0"
 author = "zakk4223"
 
-[hyprXPrimary]
+[hyprXPrimary.build]
 output = "hyprXPrimary.so"
 steps = [
     "make all",
