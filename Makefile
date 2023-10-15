@@ -2,9 +2,9 @@ PLUGIN_NAME=hyprXPrimary
 INSTALL_LOCATION=${HOME}/.local/share/hyprload/plugins/bin
 SOURCE_FILES=$(wildcard ./*.cpp)
 
-all: $(PLUGIN_NAME).so install
+all: $(PLUGIN_NAME).so
 
-install:
+install: all
 	mkdir -p ${INSTALL_LOCATION}
 	cp $(PLUGIN_NAME).so ${INSTALL_LOCATION}
 
