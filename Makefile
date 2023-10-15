@@ -1,14 +1,15 @@
 PLUGIN_NAME=hyprXPrimary
 INSTALL_LOCATION=${HOME}/.local/share/hyprload/plugins/bin
+SOURCE_FILES=$(wildcard ./*.cpp)
 
-all: check_build $(PLUGIN_NAME).so
+all: $(PLUGIN_NAME).so install
 
-install: all
+install:
 	mkdir -p ${INSTALL_LOCATION}
 	cp $(PLUGIN_NAME).so ${INSTALL_LOCATION}
 
-check_build:
-	g++ -shared -Wall -fPIC --no-gnu-unique main.cpp -o $(PLUGIN_NAME).so -g  -DWLR_USE_UNSTABLE `pkg-config --cflags pixman-1 libdrm hyprland` -std=c++23
+$(PLUGIN_NAME).so: $(SOURCE_FILES)
+	g++ -shared -Wall -fPIC --no-gnu-unique $(SOURCE_FILES) -g  -DWLR_USE_UNSTABLE `pkg-config --cflags pixman-1 libdrm hyprland` -std=c++23 -o $(PLUGIN_NAME).so
 
 clean:
 	rm -f ./$(PLUGIN_NAME).so
