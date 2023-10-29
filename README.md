@@ -5,11 +5,11 @@ Many XWayland programs (mostly games) do weird things in multi-monitor configura
 Setting a primary XWayland monitor usually fixes them. You can do it via 'xrandr' but why not automate it as much as possible?
 
 ## Using [hyprload](https://github.com/Duckonaut/hyprload)
-Add the line `"XorvatoAmigos/hyprXPrimary",` to your `hyprload.toml` config, like this
+Add the line `"zakk4223/hyprXPrimary",` to your `hyprload.toml` config, like this
 
 ```toml
 plugins = [
-    "XorvatoAmigos/hyprXPrimary",
+    "zakk4223/hyprXPrimary",
 ]
 ```
 
