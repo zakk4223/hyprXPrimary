@@ -1,0 +1,11 @@
+[repository]
+name = "hyprXPrimary"
+authors = ["Zakk"]
+
+[hyprXPrimary]
+description = "Primary XWayland display"
+authors = ["Zakk"]
+output = "hyprXPrimary.so"
+build = [
+	"make all"
+]
