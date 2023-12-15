@@ -4,6 +4,11 @@
 Many XWayland programs (mostly games) do weird things in multi-monitor configurations where the monitors have different sizes.
 Setting a primary XWayland monitor usually fixes them. You can do it via 'xrandr' but why not automate it as much as possible?
 
+## Using hyprpm, Hyprland's official plugin manager (recommended)
+1. Run `hyprpm add https://github.com/zakk4223/hyprXPrimary` and wait for hyprpm to build the plugin.
+2. Run `hyprpm enable hyprXPrimary`
+
+
 ## Using [hyprload](https://github.com/Duckonaut/hyprload)
 Add the line `"zakk4223/hyprXPrimary",` to your `hyprload.toml` config, like this
 
