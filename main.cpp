@@ -142,5 +142,6 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
+		wl_list_remove(&XwaylandPrimaryPlugin::readyListener.link);
     HyprlandAPI::invokeHyprctlCommand("seterror", "disable");
 }
