@@ -1,6 +1,10 @@
 [repository]
 name = "hyprXPrimary"
 authors = ["Zakk"]
+commit_pins = [
+	["03ebbe18ed8517ee22591eac82cd54322f42cb7d", "058fef2decc91a0849c7556a0ec428fe45a4d418"]
+]
+
 
 [hyprXPrimary]
 description = "Primary XWayland display"
