@@ -31,10 +31,10 @@ namespace XwaylandPrimaryPlugin {
       //There's no xwayland server, and xcb_connect seems to hang if there isn't?
       return;
     }
-    static SConfigValue* PRIMARYNAME = HyprlandAPI::getConfigValue(PHANDLE, "plugin:xwaylandprimary:display");
-    const auto PMONITOR = g_pCompositor->getMonitorFromName(PRIMARYNAME->strValue);
+    static auto* const PRIMARYNAME = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:xwaylandprimary:display")->getDataStaticPtr();
+    const auto PMONITOR = g_pCompositor->getMonitorFromName(*PRIMARYNAME);
     if (!PMONITOR) {
-      Debug::log(LOG, "XWaylandPrimary: Could not find monitor {}", PRIMARYNAME->strValue);
+      Debug::log(LOG, "XWaylandPrimary: Could not find monitor {}", *PRIMARYNAME);
       return;
     }
   
@@ -125,7 +125,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
 
 
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:xwaylandprimary:display", SConfigValue{.strValue = STRVAL_EMPTY});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:xwaylandprimary:display",Hyprlang::STRING{STRVAL_EMPTY});
     HyprlandAPI::reloadConfig();
 
     //static const auto XWAYLANDSCALEMETHODS = HyprlandAPI::findFunctionsByName(PHANDLE, "loadConfigLoadVars");
