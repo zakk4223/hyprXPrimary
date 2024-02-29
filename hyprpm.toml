@@ -3,7 +3,8 @@ name = "hyprXPrimary"
 authors = ["Zakk"]
 commit_pins = [
 	["03ebbe18ed8517ee22591eac82cd54322f42cb7d", "058fef2decc91a0849c7556a0ec428fe45a4d418"],
-	["84ab8d11e8951a6551d1e1bf87796a8589da6d47", "ba7378e9bfa6adef1f4d7f7beeec0dbd9826d952"]
+	["84ab8d11e8951a6551d1e1bf87796a8589da6d47", "ba7378e9bfa6adef1f4d7f7beeec0dbd9826d952"],
+	["1c460e98f870676b15871fe4e5bfeb1a32a3d6d8", "21590d6e832d8ba526cea385a847951258ec465a"]
 ]
 
 
