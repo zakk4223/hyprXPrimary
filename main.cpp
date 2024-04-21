@@ -23,7 +23,7 @@ APICALL EXPORT std::string PLUGIN_API_VERSION() {
 namespace XwaylandPrimaryPlugin {
 
 
-  HOOK_CALLBACK_FN *prerenderHook = nullptr;
+std::shared_ptr<HOOK_CALLBACK_FN> prerenderHook;
 
   void setXWaylandPrimary() {
     if (!g_pXWaylandManager->m_sWLRXWayland->server->client) {
@@ -64,7 +64,6 @@ namespace XwaylandPrimaryPlugin {
 			}
 			uint8_t *output_name = xcb_randr_get_output_info_name(output);
 			int len = xcb_randr_get_output_info_name_length(output);
-			Debug::log(LOG, "XCB OUTPUT {} HYPR PRIMARY {}", (char *)output_name, PMONITOR->szName);
 			if (!strncmp((char *)output_name, PMONITOR->szName.c_str(), len))
 			{
           Debug::log(LOG, "XWaylandPrimary: setting primary monitor {}", (char *)output_name);
