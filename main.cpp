@@ -71,7 +71,6 @@ std::shared_ptr<HOOK_CALLBACK_FN> prerenderHook;
           xcb_request_check(XCBCONN, p_cookie);
           if (prerenderHook)
           {
-            HyprlandAPI::unregisterCallback(PHANDLE, prerenderHook);
             prerenderHook = nullptr;
           }
 					free(output);
@@ -113,7 +112,7 @@ std::shared_ptr<HOOK_CALLBACK_FN> prerenderHook;
       //Xwayland may not have created the new output yet, so delay via a periodic hook until it does. 
       if (prerenderHook) {
         //If there's an existing prerender hook, cancel it.
-        HyprlandAPI::unregisterCallback(PHANDLE, prerenderHook);
+				prerenderHook = nullptr;
       }
       prerenderHook = HyprlandAPI::registerCallbackDynamic(PHANDLE, "preRender", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::setXWaylandPrimary();});
     }
@@ -132,8 +131,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     //XwaylandPrimaryPlugin::ploadConfigLoadVarsHook = HyprlandAPI::createFunctionHook(PHANDLE, XWAYLANDSCALEMETHODS[0].address, (void*)&XwaylandPrimaryPlugin::hkloadConfigLoadVars);
     //XwaylandPrimaryPlugin::ploadConfigLoadVarsHook->hook();
 
-    HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorAdded", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
-    HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorRemoved", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
+    static auto MACB = HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorAdded", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
+    static auto MRCB = HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorRemoved", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
 
     addWLSignal(&g_pXWaylandManager->m_sWLRXWayland->events.ready, &XwaylandPrimaryPlugin::readyListener, NULL, "Xwayland Primary Plugin");
 
