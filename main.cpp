@@ -23,7 +23,7 @@ APICALL EXPORT std::string PLUGIN_API_VERSION() {
 namespace XwaylandPrimaryPlugin {
 
 
-std::shared_ptr<HOOK_CALLBACK_FN> prerenderHook;
+SP<HOOK_CALLBACK_FN> prerenderHook;
 
   void setXWaylandPrimary() {
     if (!g_pXWaylandManager->m_sWLRXWayland->server->client) {
