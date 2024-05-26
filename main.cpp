@@ -1,7 +1,8 @@
 #include <hyprland/src/SharedDefs.hpp>
-#include <hyprland/src/managers/XWaylandManager.hpp>
-
 #include <hyprland/src/Compositor.hpp>
+#define private public
+#include <hyprland/src/xwayland/XWayland.hpp>
+#undef private
 #include <hyprland/src/helpers/Monitor.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/render/Renderer.hpp>
@@ -26,7 +27,7 @@ namespace XwaylandPrimaryPlugin {
 SP<HOOK_CALLBACK_FN> prerenderHook;
 
   void setXWaylandPrimary() {
-    if (!g_pXWaylandManager->m_sWLRXWayland->server->client) {
+    if (!g_pXWayland->pWM->connection || !g_pXWayland->pWM->screen) {
       Debug::log(LOG, "XWaylandPrimary: No XWayland client");
       //There's no xwayland server, and xcb_connect seems to hang if there isn't?
       return;
@@ -38,13 +39,8 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
       return;
     }
   
-    const auto XCBCONN = xcb_connect(g_pXWaylandManager->m_sWLRXWayland->display_name, NULL);
-    const auto XCBERR = xcb_connection_has_error(XCBCONN);
-    if (XCBERR) {
-      return;
-    }
-  
-    xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(XCBCONN)).data;
+	  xcb_connection_t *XCBCONN = g_pXWayland->pWM->connection;
+    xcb_screen_t *screen = g_pXWayland->pWM->screen; 
   
     xcb_randr_get_screen_resources_cookie_t res_cookie = xcb_randr_get_screen_resources(XCBCONN, screen->root);
     xcb_randr_get_screen_resources_reply_t *res_reply = xcb_randr_get_screen_resources_reply(XCBCONN, res_cookie, 0);
@@ -64,6 +60,7 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
 			}
 			uint8_t *output_name = xcb_randr_get_output_info_name(output);
 			int len = xcb_randr_get_output_info_name_length(output);
+		  Debug::log(LOG, "XWaylandPrimary: RANDR OUTPUT {}", (char *)output_name);
 			if (!strncmp((char *)output_name, PMONITOR->szName.c_str(), len))
 			{
           Debug::log(LOG, "XWaylandPrimary: setting primary monitor {}", (char *)output_name);
@@ -80,7 +77,6 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
 		}
     if (res_reply)
       free(res_reply);
-    xcb_disconnect(XCBCONN);
     return;
   }
   
@@ -91,13 +87,14 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
   }
   
   wl_listener readyListener = {.notify = XWaylandready};
-  inline CFunctionHook* ploadConfigLoadVarsHook = nullptr;
+  inline CFunctionHook* pXWaylandReadyHook = nullptr;
 
-  typedef void (*origloadConfigLoadVars)();
+  typedef int (*origXWaylandReady)(void *thisptr, int fd, uint32_t mask);
 
-  void hkloadConfigLoadVars() { 
-	  (*(origloadConfigLoadVars)ploadConfigLoadVarsHook->m_pOriginal)();
+  int hkXWaylandReady(void *thisptr, int fd, uint32_t mask) { 
+	  int retval = (*(origXWaylandReady)pXWaylandReadyHook->m_pOriginal)(thisptr, fd, mask);
     setXWaylandPrimary();
+	  return retval;
   }
 
 
@@ -108,7 +105,7 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
         continue;
       Debug::log(LOG, "XWaylandPrimary: MONITOR {} X {} Y {} WIDTH {} HEIGHT {}", m->szName, m->vecPosition.x, m->vecPosition.y, m->vecSize.x, m->vecSize.y);
     }
-    if (g_pXWaylandManager->m_sWLRXWayland->server->client) {
+    if (g_pXWayland->pWM && g_pXWayland->pWM->connection) {
       //Xwayland may not have created the new output yet, so delay via a periodic hook until it does. 
       if (prerenderHook) {
         //If there's an existing prerender hook, cancel it.
@@ -126,20 +123,25 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:xwaylandprimary:display",Hyprlang::STRING{STRVAL_EMPTY});
     HyprlandAPI::reloadConfig();
 
-    //static const auto XWAYLANDSCALEMETHODS = HyprlandAPI::findFunctionsByName(PHANDLE, "loadConfigLoadVars");
-
-    //XwaylandPrimaryPlugin::ploadConfigLoadVarsHook = HyprlandAPI::createFunctionHook(PHANDLE, XWAYLANDSCALEMETHODS[0].address, (void*)&XwaylandPrimaryPlugin::hkloadConfigLoadVars);
-    //XwaylandPrimaryPlugin::ploadConfigLoadVarsHook->hook();
+    static const auto XWAYLANDREADYMETHODS = HyprlandAPI::findFunctionsByName(PHANDLE, "ready");
+    for(auto & match: XWAYLANDREADYMETHODS) {
+		  if (match.demangled.contains("CXWaylandServer::ready")) {  
+        XwaylandPrimaryPlugin::pXWaylandReadyHook = HyprlandAPI::createFunctionHook(PHANDLE, match.address, (void*)&XwaylandPrimaryPlugin::hkXWaylandReady);
+        XwaylandPrimaryPlugin::pXWaylandReadyHook->hook();
+			  break;
+	    }
+	  }
 
     static auto MACB = HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorAdded", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
     static auto MRCB = HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorRemoved", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
-
-    addWLSignal(&g_pXWaylandManager->m_sWLRXWayland->events.ready, &XwaylandPrimaryPlugin::readyListener, NULL, "Xwayland Primary Plugin");
+	  g_pConfigManager->tick();
+	  Debug::log(LOG, "SET XWAYLAND PRIMARY");
+	  
+	  XwaylandPrimaryPlugin::setXWaylandPrimary();
 
     return {"XWayland Primary Display", "Set a configurable XWayland primary display", "Zakk", "1.0"};
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
-		wl_list_remove(&XwaylandPrimaryPlugin::readyListener.link);
     HyprlandAPI::invokeHyprctlCommand("seterror", "disable");
 }
