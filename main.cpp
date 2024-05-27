@@ -27,9 +27,8 @@ namespace XwaylandPrimaryPlugin {
 SP<HOOK_CALLBACK_FN> prerenderHook;
 
   void setXWaylandPrimary() {
-    if (!g_pXWayland->pWM->connection || !g_pXWayland->pWM->screen) {
+    if (!g_pXWayland || !g_pXWayland->pWM || !g_pXWayland->pWM->connection || !g_pXWayland->pWM->screen) {
       Debug::log(LOG, "XWaylandPrimary: No XWayland client");
-      //There's no xwayland server, and xcb_connect seems to hang if there isn't?
       return;
     }
     static auto* const PRIMARYNAME = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:xwaylandprimary:display")->getDataStaticPtr();
