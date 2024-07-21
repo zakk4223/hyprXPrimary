@@ -13,6 +13,7 @@
 #include <thread>
 #include <xcb/randr.h>
 #include <xcb/xcb.h>
+#include <cstring>
 
 // Methods
 // Do NOT change this function.
