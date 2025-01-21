@@ -7,6 +7,7 @@
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/render/Renderer.hpp>
 #include <hyprland/src/managers/EventManager.hpp>
+#include <hyprland/src/config/ConfigManager.hpp>
 #include "globals.hpp"
 
 #include <unistd.h>
@@ -134,7 +135,6 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     static auto MACB = HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorAdded", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
     static auto MRCB = HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorRemoved", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
-	  g_pConfigManager->tick();
 	  Debug::log(LOG, "SET XWAYLAND PRIMARY");
 	  
 	  XwaylandPrimaryPlugin::setXWaylandPrimary();
