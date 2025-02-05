@@ -1,5 +1,6 @@
 #include <hyprland/src/SharedDefs.hpp>
 #include <hyprland/src/Compositor.hpp>
+#include <hyprutils/os/FileDescriptor.hpp>
 #define private public
 #include <hyprland/src/xwayland/XWayland.hpp>
 #undef private
@@ -90,10 +91,10 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
   wl_listener readyListener = {.notify = XWaylandready};
   inline CFunctionHook* pXWaylandReadyHook = nullptr;
 
-  typedef int (*origXWaylandReady)(void *thisptr, int fd, uint32_t mask);
+  typedef int (*origXWaylandReady)(void *thisptr, Hyprutils::OS::CFileDescriptor fd, uint32_t mask);
 
-  int hkXWaylandReady(void *thisptr, int fd, uint32_t mask) { 
-	  int retval = (*(origXWaylandReady)pXWaylandReadyHook->m_pOriginal)(thisptr, fd, mask);
+  int hkXWaylandReady(void *thisptr, Hyprutils::OS::CFileDescriptor fd, uint32_t mask) { 
+	  int retval = (*(origXWaylandReady)pXWaylandReadyHook->m_pOriginal)(thisptr, std::move(fd), mask);
     setXWaylandPrimary();
 	  return retval;
   }
