@@ -35,7 +35,16 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
       return;
     }
     static auto* const PRIMARYNAME = (Hyprlang::STRING const*)HyprlandAPI::getConfigValue(PHANDLE, "plugin:xwaylandprimary:display")->getDataStaticPtr();
-    const auto PMONITOR = g_pCompositor->getMonitorFromName(std::string{*PRIMARYNAME});
+    static auto* const FOLLOWFOCUS = (Hyprlang::INT* const *)HyprlandAPI::getConfigValue(PHANDLE, "plugin:xwaylandprimary:followfocused")->getDataStaticPtr();
+		auto dofollow = **FOLLOWFOCUS;
+
+    auto PMONITOR = g_pCompositor->getMonitorFromName(std::string{*PRIMARYNAME});
+
+    if (dofollow && g_pCompositor->m_pLastMonitor)
+    {
+      PMONITOR = g_pCompositor->m_pLastMonitor.lock();
+    }
+
     if (!PMONITOR) {
       Debug::log(LOG, "XWaylandPrimary: Could not find monitor {}", std::string{*PRIMARYNAME});
       return;
@@ -101,7 +110,6 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
 
 
   void monitorEvent() {
-    Debug::log(LOG, "XWaylandPrimary: MONITOR EVENT");
     for(auto & m: g_pCompositor->m_vMonitors) {
       if (!m->output)
         continue;
@@ -123,6 +131,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
 
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:xwaylandprimary:display",Hyprlang::STRING{STRVAL_EMPTY});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:xwaylandprimary:followfocused",Hyprlang::INT{0});
     static auto CONFIGRELOAD = HyprlandAPI::registerCallbackDynamic(PHANDLE, "configReloaded", [&](void* self, SCallbackInfo& info, std::any data) { XwaylandPrimaryPlugin::setXWaylandPrimary();});
 
     HyprlandAPI::reloadConfig();
@@ -138,7 +147,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     static auto MACB = HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorAdded", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
     static auto MRCB = HyprlandAPI::registerCallbackDynamic(PHANDLE, "monitorRemoved", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
-	  Debug::log(LOG, "SET XWAYLAND PRIMARY");
+    static auto FMCB = HyprlandAPI::registerCallbackDynamic(PHANDLE, "focusedMon", [&](void *self, SCallbackInfo&, std::any data) {XwaylandPrimaryPlugin::monitorEvent();});
 	  
 	  XwaylandPrimaryPlugin::setXWaylandPrimary();
 
