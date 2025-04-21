@@ -9,7 +9,7 @@ install: all
 	cp $(PLUGIN_NAME).so ${INSTALL_LOCATION}
 
 $(PLUGIN_NAME).so: $(SOURCE_FILES)
-	g++ -shared -Wall -fPIC --no-gnu-unique $(SOURCE_FILES) -g  -DWLR_USE_UNSTABLE `pkg-config --cflags pixman-1 libdrm hyprland` -std=c++23 -o $(PLUGIN_NAME).so
+	g++ -shared -Wall -fPIC --no-gnu-unique $(SOURCE_FILES) -g `pkg-config --libs xcb-randr` `pkg-config --cflags pixman-1 libdrm hyprland` -std=c++23 -o $(PLUGIN_NAME).so
 
 clean:
 	rm -f ./$(PLUGIN_NAME).so
