@@ -30,7 +30,7 @@ namespace XwaylandPrimaryPlugin {
 SP<HOOK_CALLBACK_FN> prerenderHook;
 
   void setXWaylandPrimary() {
-    if (!g_pXWayland || !g_pXWayland->pWM || !g_pXWayland->pWM->connection || !g_pXWayland->pWM->screen) {
+    if (!g_pXWayland || !g_pXWayland->m_WM || !g_pXWayland->m_WM->connection || !g_pXWayland->m_WM->screen) {
       Debug::log(LOG, "XWaylandPrimary: No XWayland client");
       return;
     }
@@ -40,9 +40,9 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
 
     auto PMONITOR = g_pCompositor->getMonitorFromName(std::string{*PRIMARYNAME});
 
-    if (dofollow && g_pCompositor->m_pLastMonitor)
+    if (dofollow && g_pCompositor->m_lastMonitor)
     {
-      PMONITOR = g_pCompositor->m_pLastMonitor.lock();
+      PMONITOR = g_pCompositor->m_lastMonitor.lock();
     }
 
     if (!PMONITOR) {
@@ -50,8 +50,8 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
       return;
     }
   
-	  xcb_connection_t *XCBCONN = g_pXWayland->pWM->connection;
-    xcb_screen_t *screen = g_pXWayland->pWM->screen; 
+	  xcb_connection_t *XCBCONN = g_pXWayland->m_WM->connection;
+    xcb_screen_t *screen = g_pXWayland->m_WM->screen; 
   
     xcb_randr_get_screen_resources_cookie_t res_cookie = xcb_randr_get_screen_resources(XCBCONN, screen->root);
     xcb_randr_get_screen_resources_reply_t *res_reply = xcb_randr_get_screen_resources_reply(XCBCONN, res_cookie, 0);
@@ -72,7 +72,7 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
 			uint8_t *output_name = xcb_randr_get_output_info_name(output);
 			int len = xcb_randr_get_output_info_name_length(output);
 		  Debug::log(LOG, "XWaylandPrimary: RANDR OUTPUT {}", (char *)output_name);
-			if (!strncmp((char *)output_name, PMONITOR->szName.c_str(), len))
+			if (!strncmp((char *)output_name, PMONITOR->m_name.c_str(), len))
 			{
           Debug::log(LOG, "XWaylandPrimary: setting primary monitor {}", (char *)output_name);
           xcb_void_cookie_t p_cookie = xcb_randr_set_output_primary_checked(XCBCONN, screen->root, x_outputs[i]);
@@ -103,19 +103,19 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
   typedef int (*origXWaylandReady)(void *thisptr, int fd, uint32_t mask);
 
   int hkXWaylandReady(void *thisptr, int fd, uint32_t mask) { 
-	  int retval = (*(origXWaylandReady)pXWaylandReadyHook->m_pOriginal)(thisptr, fd, mask);
+	  int retval = (*(origXWaylandReady)pXWaylandReadyHook->m_original)(thisptr, fd, mask);
     setXWaylandPrimary();
 	  return retval;
   }
 
 
   void monitorEvent() {
-    for(auto & m: g_pCompositor->m_vMonitors) {
+    for(auto & m: g_pCompositor->m_monitors) {
       if (!m->output)
         continue;
       Debug::log(LOG, "XWaylandPrimary: MONITOR {} X {} Y {} WIDTH {} HEIGHT {}", m->szName, m->vecPosition.x, m->vecPosition.y, m->vecSize.x, m->vecSize.y);
     }
-    if (g_pXWayland->pWM && g_pXWayland->pWM->connection) {
+    if (g_pXWayland->m_WM && g_pXWayland->m_WM->connection) {
       //Xwayland may not have created the new output yet, so delay via a periodic hook until it does. 
       if (prerenderHook) {
         //If there's an existing prerender hook, cancel it.
