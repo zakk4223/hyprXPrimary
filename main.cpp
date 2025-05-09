@@ -30,7 +30,7 @@ namespace XwaylandPrimaryPlugin {
 SP<HOOK_CALLBACK_FN> prerenderHook;
 
   void setXWaylandPrimary() {
-    if (!g_pXWayland || !g_pXWayland->m_WM || !g_pXWayland->m_WM->connection || !g_pXWayland->m_WM->screen) {
+    if (!g_pXWayland || !g_pXWayland->m_wm || !g_pXWayland->m_wm->m_connection || !g_pXWayland->m_wm->m_screen) {
       Debug::log(LOG, "XWaylandPrimary: No XWayland client");
       return;
     }
@@ -50,8 +50,8 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
       return;
     }
   
-	  xcb_connection_t *XCBCONN = g_pXWayland->m_WM->connection;
-    xcb_screen_t *screen = g_pXWayland->m_WM->screen; 
+	  xcb_connection_t *XCBCONN = g_pXWayland->m_wm->m_connection;
+    xcb_screen_t *screen = g_pXWayland->m_wm->m_screen; 
   
     xcb_randr_get_screen_resources_cookie_t res_cookie = xcb_randr_get_screen_resources(XCBCONN, screen->root);
     xcb_randr_get_screen_resources_reply_t *res_reply = xcb_randr_get_screen_resources_reply(XCBCONN, res_cookie, 0);
@@ -111,11 +111,11 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
 
   void monitorEvent() {
     for(auto & m: g_pCompositor->m_monitors) {
-      if (!m->output)
+      if (!m->m_output)
         continue;
-      Debug::log(LOG, "XWaylandPrimary: MONITOR {} X {} Y {} WIDTH {} HEIGHT {}", m->szName, m->vecPosition.x, m->vecPosition.y, m->vecSize.x, m->vecSize.y);
+      Debug::log(LOG, "XWaylandPrimary: MONITOR {} X {} Y {} WIDTH {} HEIGHT {}", m->m_name, m->m_position.x, m->m_position.y, m->m_size.x, m->m_size.y);
     }
-    if (g_pXWayland->m_WM && g_pXWayland->m_WM->connection) {
+    if (g_pXWayland->m_wm && g_pXWayland->m_wm->m_connection) {
       //Xwayland may not have created the new output yet, so delay via a periodic hook until it does. 
       if (prerenderHook) {
         //If there's an existing prerender hook, cancel it.
