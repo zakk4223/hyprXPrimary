@@ -50,7 +50,7 @@ SP<HOOK_CALLBACK_FN> prerenderHook;
       return;
     }
   
-	  xcb_connection_t *XCBCONN = g_pXWayland->m_wm->m_connection;
+	  xcb_connection_t *XCBCONN = g_pXWayland->m_wm->getConnection();
     xcb_screen_t *screen = g_pXWayland->m_wm->m_screen; 
   
     xcb_randr_get_screen_resources_cookie_t res_cookie = xcb_randr_get_screen_resources(XCBCONN, screen->root);
