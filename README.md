@@ -20,6 +20,20 @@ plugins = [
 
 Then update via the `hyprload,update` dispatcher.
 
+## Using nix flakes
+Make sure you override the inputs correctly:
+```nix
+inputs = {
+  hyprland.url = "github:hyprwm/hyprland";
+  hyprXPrimary = {
+    url = "github:zakk4223/hyprXPrimary";
+    inputs.hyprland.follows = "hyprland";
+    inputs.nixpkgs.follows = "hyprland/nixpkgs";
+  };    
+};
+```
+After that you can access the plugin with: `inputs.hyprXPrimary.packages.${system}.default`
+
 ## Manual installation
 
 1. Build the plugin 
