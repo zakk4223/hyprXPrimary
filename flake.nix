@@ -26,19 +26,17 @@
         hyprXPrimary =
           let
             inherit (inputs.hyprland.packages.${system}) hyprland;
-            inherit (pkgsFor.${system}) stdenvNoCC gcc14;
+            inherit (pkgsFor.${system}) gcc15Stdenv;
 
             name = "hyprXPrimary";
           in
-          stdenvNoCC.mkDerivation {
+          gcc15Stdenv.mkDerivation {
             inherit name;
-            pname = name;
             src = ./.;
 
             inherit (hyprland) buildInputs;
             nativeBuildInputs = hyprland.nativeBuildInputs ++ [
               hyprland
-              gcc14
             ];
 
             dontUseCmakeConfigure = true;
