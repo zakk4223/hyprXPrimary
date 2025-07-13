@@ -32,6 +32,8 @@
           in
           gcc15Stdenv.mkDerivation {
             inherit name;
+            pname = name;
+
             src = ./.;
 
             inherit (hyprland) buildInputs;
